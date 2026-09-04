@@ -53,7 +53,7 @@ export function LoginPage() {
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        <Field label="Correo electrónico patatudo" error={errors.email?.message} required>
+        <Field label="Correo electrónico" error={errors.email?.message} required>
           <Input
             type="email"
             autoComplete="email"
