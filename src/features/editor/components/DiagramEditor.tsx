@@ -20,7 +20,8 @@ import { EntityNodeView } from '@/features/editor/components/EntityNode';
 import { Inspector } from '@/features/editor/components/Inspector';
 import { Palette, SYMBOL_DRAG_TYPE } from '@/features/editor/components/Palette';
 import { RelationEdgeView } from '@/features/editor/components/RelationEdge';
-import { EMPTY_ENTITY } from '@/features/editor/types';
+import { EditorActionsContext } from '@/features/editor/EditorActionsContext';
+import { EMPTY_ENTITY, EMPTY_RELATION } from '@/features/editor/types';
 import type {
   Diagram,
   EntityData,
@@ -73,6 +74,7 @@ function EditorCanvas({ catalog, diagram, saving, onChange, onSave }: DiagramEdi
           id: createId(),
           type: 'entity',
           position,
+          ...(symbol.shape === 'household' ? { zIndex: -1 } : {}),
           data: { ...EMPTY_ENTITY, shape: symbol.shape, ...symbol.defaults },
         },
       ]);
@@ -114,7 +116,7 @@ function EditorCanvas({ catalog, diagram, saving, onChange, onSave }: DiagramEdi
             ...connection,
             id: createId(),
             type: 'relation',
-            data: { relation: activeRelation, note: '' },
+            data: { ...EMPTY_RELATION, relation: activeRelation },
           },
           current,
         ),
@@ -151,7 +153,7 @@ function EditorCanvas({ catalog, diagram, saving, onChange, onSave }: DiagramEdi
       setEdges((current) =>
         current.map((edge) =>
           edge.id === id
-            ? { ...edge, data: { relation: 'union', note: '', ...edge.data, ...patch } }
+            ? { ...edge, data: { ...EMPTY_RELATION, ...edge.data, ...patch } }
             : edge,
         ),
       );
@@ -177,64 +179,66 @@ function EditorCanvas({ catalog, diagram, saving, onChange, onSave }: DiagramEdi
   );
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <Palette
-        catalog={catalog}
-        activeRelation={activeRelation}
-        onRelationChange={setActiveRelation}
-        onAddSymbol={addSymbolAtCenter}
-      />
+    <EditorActionsContext.Provider value={{ onNodeChange: updateNode }}>
+      <div className="flex min-h-0 flex-1">
+        <Palette
+          catalog={catalog}
+          activeRelation={activeRelation}
+          onRelationChange={setActiveRelation}
+          onAddSymbol={addSymbolAtCenter}
+        />
 
-      <div ref={wrapperRef} className="relative min-w-0 flex-1 bg-slate-100">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onSelectionChange={onSelectionChange}
-          onDrop={onDrop}
-          onDragOver={(event) => {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
-          }}
-          // Permite unir dos figuras desde cualquiera de sus cuatro bordes
-          connectionMode={ConnectionMode.Loose}
-          deleteKeyCode={['Delete', 'Backspace']}
-          fitView
-          fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
-          minZoom={0.2}
-          maxZoom={2.5}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1.5} color="#cbd5e1" />
-          <Controls showInteractive={false} />
-          <MiniMap pannable zoomable nodeColor="#94a3b8" />
-        </ReactFlow>
+        <div ref={wrapperRef} className="relative min-w-0 flex-1 bg-slate-100">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onSelectionChange={onSelectionChange}
+            onDrop={onDrop}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+            }}
+            // Permite unir dos figuras desde cualquiera de sus cuatro bordes
+            connectionMode={ConnectionMode.Loose}
+            deleteKeyCode={['Delete', 'Backspace']}
+            fitView
+            fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
+            minZoom={0.2}
+            maxZoom={2.5}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background variant={BackgroundVariant.Dots} gap={20} size={1.5} color="#cbd5e1" />
+            <Controls showInteractive={false} />
+            <MiniMap pannable zoomable nodeColor="#94a3b8" />
+          </ReactFlow>
 
-        {nodes.length === 0 && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="max-w-xs rounded-2xl border border-dashed border-slate-300 bg-white/80 px-6 py-5 text-center text-sm text-slate-500">
-              Arrastra un elemento del panel izquierdo para empezar tu {catalog.name.toLowerCase()}.
-            </p>
-          </div>
-        )}
+          {nodes.length === 0 && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <p className="max-w-xs rounded-2xl border border-dashed border-slate-300 bg-white/80 px-6 py-5 text-center text-sm text-slate-500">
+                Arrastra un elemento del panel izquierdo para empezar tu {catalog.name.toLowerCase()}.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <Inspector
+          catalog={catalog}
+          node={selectedNode}
+          edge={selectedEdge}
+          saving={saving}
+          onNodeChange={updateNode}
+          onNodeDelete={deleteNode}
+          onEdgeChange={updateEdge}
+          onEdgeDelete={deleteEdge}
+          onSave={onSave}
+        />
       </div>
-
-      <Inspector
-        catalog={catalog}
-        node={selectedNode}
-        edge={selectedEdge}
-        saving={saving}
-        onNodeChange={updateNode}
-        onNodeDelete={deleteNode}
-        onEdgeChange={updateEdge}
-        onEdgeDelete={deleteEdge}
-        onSave={onSave}
-      />
-    </div>
+    </EditorActionsContext.Provider>
   );
 }
 

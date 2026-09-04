@@ -3,6 +3,7 @@ import { Plus, Trash2, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
+import { patchFromAgeInput } from '@/features/editor/entityStyle';
 import {
   buildFamilyDiagram,
   emptyMember,
@@ -83,7 +84,7 @@ export function MembersModal({ open, onClose, onGenerate }: MembersModalProps) {
               />
               <Input
                 value={member.age}
-                onChange={(event) => update(member.id, { age: event.target.value })}
+                onChange={(event) => update(member.id, { age: patchFromAgeInput(event.target.value).age })}
                 placeholder="Edad"
                 className="sm:w-20"
                 inputMode="numeric"

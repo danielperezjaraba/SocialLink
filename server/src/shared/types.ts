@@ -2,7 +2,22 @@ export type UserProfile = 'estudiante' | 'docente' | 'profesional';
 export type PlanId = 'free' | 'premium' | 'institucional';
 export type ToolKind = 'genograma' | 'familiograma' | 'ecomapa';
 
-export type EntityShape = 'male' | 'female' | 'unknown' | 'pregnancy' | 'resource';
+export type EntityShape =
+  | 'male'
+  | 'female'
+  | 'unknown'
+  | 'pregnancy'
+  | 'resource'
+  | 'patient_male'
+  | 'patient_female'
+  | 'stillborn'
+  | 'induced_abortion'
+  | 'spontaneous_abortion'
+  | 'disorder_untreated'
+  | 'disorder_treated'
+  | 'substance_use'
+  | 'substance_recovery'
+  | 'household';
 export type Sex = '' | 'M' | 'F' | 'X';
 
 export type RelationId =
@@ -12,6 +27,8 @@ export type RelationId =
   | 'divorce'
   | 'child'
   | 'adoption'
+  | 'twins_identical'
+  | 'twins_fraternal'
   | 'strong'
   | 'weak'
   | 'conflictive'
@@ -35,6 +52,12 @@ export type EntityData = {
   deceased: boolean;
   isIndex: boolean;
   notes: string;
+  strokeColor: string;
+  fillColor: string;
+  textColor: string;
+  showAge: boolean;
+  showBirthDate: boolean;
+  showNameInside: boolean;
 };
 
 export type DiagramNode = {
@@ -51,7 +74,7 @@ export type DiagramEdge = {
   target: string;
   sourceHandle?: string | null;
   targetHandle?: string | null;
-  data: { relation: RelationId; note: string };
+  data: { relation: RelationId; note: string; strokeColor: string };
 };
 
 export type Diagram = {

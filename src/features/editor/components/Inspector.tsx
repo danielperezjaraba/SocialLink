@@ -1,14 +1,42 @@
-import { MousePointerSquareDashed, Save, Trash2 } from 'lucide-react';
+import { MousePointerSquareDashed, Palette, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
+import {
+  isValidBirthDate,
+  MAX_AGE,
+  maxBirthDateIso,
+  minBirthDateIso,
+  normalizeColor,
+  patchFromAgeInput,
+} from '@/features/editor/entityStyle';
 import { RelationPreview } from '@/features/editor/components/Previews';
+import { isAnnotationShape, isPersonShape, shapeLabel } from '@/features/editor/shapes';
 import type {
   EntityData,
   EntityNode,
+  EntityShape,
   RelationData,
   RelationEdge,
   ToolCatalog,
 } from '@/features/editor/types';
+
+const SHAPE_OPTIONS: EntityShape[] = [
+  'male',
+  'female',
+  'unknown',
+  'pregnancy',
+  'patient_male',
+  'patient_female',
+  'stillborn',
+  'induced_abortion',
+  'spontaneous_abortion',
+  'disorder_untreated',
+  'disorder_treated',
+  'substance_use',
+  'substance_recovery',
+  'resource',
+  'household',
+];
 
 type InspectorProps = {
   catalog: ToolCatalog;
@@ -88,16 +116,29 @@ function EntityForm({
 }) {
   const data = node.data;
   const isResource = data.shape === 'resource';
+  const isHousehold = data.shape === 'household';
+  const isAnnotation = isAnnotationShape(data.shape);
+  const showPersonFields = isPersonShape(data.shape) && !isAnnotation;
   const set = (patch: Partial<EntityData>) => onChange(node.id, patch);
 
   return (
     <>
       <PanelHeader
-        title={isResource ? 'Información de la red' : 'Información de la persona'}
+        title={
+          isResource
+            ? 'Información de la red'
+            : isHousehold
+              ? 'Hogar conviviente'
+              : isAnnotation
+                ? 'Símbolo del genograma'
+                : 'Información de la persona'
+        }
         subtitle={
           isResource
             ? 'Describe el recurso del entorno y su papel en el caso.'
-            : 'Los cambios se reflejan en el lienzo de inmediato.'
+            : isHousehold
+              ? 'Óvalo punteado: colócalo detrás de quienes viven en casa.'
+              : 'Los cambios se reflejan en el lienzo de inmediato.'
         }
       />
 
@@ -110,13 +151,16 @@ function EntityForm({
           />
         </Field>
 
-        {!isResource && (
+        {showPersonFields && (
           <>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Edad">
+              <Field
+                label="Edad"
+                hint={`Máximo ${MAX_AGE} años. Se estima la fecha de nacimiento según la edad y la fecha de hoy.`}
+              >
                 <Input
                   value={data.age}
-                  onChange={(event) => set({ age: event.target.value })}
+                  onChange={(event) => set(patchFromAgeInput(event.target.value))}
                   placeholder="Ej. 34"
                   inputMode="numeric"
                 />
@@ -131,11 +175,21 @@ function EntityForm({
               </Field>
             </div>
 
-            <Field label="Fecha de nacimiento">
+            <Field
+              label="Fecha de nacimiento"
+              hint={`No puede implicar más de ${MAX_AGE} años ni ser futura. Puedes corregirla manualmente; no cambia la edad.`}
+            >
               <Input
                 type="date"
+                min={minBirthDateIso()}
+                max={maxBirthDateIso()}
                 value={data.birthDate}
-                onChange={(event) => set({ birthDate: event.target.value })}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (isValidBirthDate(value)) {
+                    set({ birthDate: value });
+                  }
+                }}
               />
             </Field>
 
@@ -160,10 +214,11 @@ function EntityForm({
                 value={data.shape}
                 onChange={(event) => set({ shape: event.target.value as EntityData['shape'] })}
               >
-                <option value="male">Cuadrado (hombre)</option>
-                <option value="female">Círculo (mujer)</option>
-                <option value="unknown">Rombo (sin dato)</option>
-                <option value="pregnancy">Triángulo (embarazo)</option>
+                {SHAPE_OPTIONS.map((shape) => (
+                  <option key={shape} value={shape}>
+                    {shapeLabel(shape)}
+                  </option>
+                ))}
               </Select>
             </Field>
 
@@ -184,6 +239,35 @@ function EntityForm({
                 onChange={(checked) => set({ isIndex: checked })}
               />
             </div>
+
+            <DisplayOptions data={data} isResource={false} set={set} />
+
+            <AppearanceSection data={data} set={set} />
+          </>
+        )}
+
+        {isResource && (
+          <>
+            <DisplayOptions data={data} isResource set={set} />
+            <AppearanceSection data={data} set={set} />
+          </>
+        )}
+
+        {(isHousehold || isAnnotation) && (
+          <>
+            <Field label="Figura">
+              <Select
+                value={data.shape}
+                onChange={(event) => set({ shape: event.target.value as EntityData['shape'] })}
+              >
+                {SHAPE_OPTIONS.map((shape) => (
+                  <option key={shape} value={shape}>
+                    {shapeLabel(shape)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <AppearanceSection data={data} set={set} />
           </>
         )}
 
@@ -265,6 +349,12 @@ function RelationForm({
             placeholder="Ej. Contacto solo en vacaciones"
           />
         </Field>
+
+        <RelationAppearanceSection
+          strokeColor={edge.data?.strokeColor ?? ''}
+          defaultColor={definition.color}
+          onChange={(strokeColor) => onChange(edge.id, { strokeColor })}
+        />
       </div>
 
       <FormActions saving={saving} onSave={onSave} onDelete={() => onDelete(edge.id)} />
@@ -292,6 +382,166 @@ function FormActions({
         Eliminar
       </Button>
     </div>
+  );
+}
+
+function DisplayOptions({
+  data,
+  isResource,
+  set,
+}: {
+  data: EntityData;
+  isResource: boolean;
+  set: (patch: Partial<EntityData>) => void;
+}) {
+  return (
+    <div className="space-y-2 rounded-xl border border-slate-200 px-3 py-3">
+      <p className="text-xs font-semibold text-slate-700">Texto en el símbolo</p>
+      <p className="text-[11px] leading-relaxed text-slate-500">
+        Elige qué datos se muestran dentro de la figura. También puedes hacer doble clic sobre
+        el símbolo para editar nombre y edad al instante.
+      </p>
+      {!isResource && (
+        <>
+          <Checkbox
+            label="Mostrar edad dentro del símbolo"
+            checked={data.showAge !== false}
+            onChange={(checked) => set({ showAge: checked })}
+          />
+          <Checkbox
+            label="Mostrar fecha de nacimiento dentro del símbolo"
+            checked={data.showBirthDate}
+            onChange={(checked) => set({ showBirthDate: checked })}
+          />
+        </>
+      )}
+      <Checkbox
+        label="Mostrar nombre dentro del símbolo"
+        checked={data.showNameInside}
+        onChange={(checked) => set({ showNameInside: checked })}
+      />
+    </div>
+  );
+}
+
+function AppearanceSection({
+  data,
+  set,
+}: {
+  data: EntityData;
+  set: (patch: Partial<EntityData>) => void;
+}) {
+  const hasCustomColors = Boolean(data.strokeColor || data.fillColor || data.textColor);
+
+  return (
+    <div className="space-y-3 rounded-xl border border-slate-200 px-3 py-3">
+      <div className="flex items-center gap-2">
+        <Palette className="h-4 w-4 text-slate-500" />
+        <p className="text-xs font-semibold text-slate-700">Colores del símbolo</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <ColorField
+          label="Borde"
+          value={data.strokeColor}
+          fallback="#334155"
+          onChange={(value) => set({ strokeColor: normalizeColor(value) })}
+        />
+        <ColorField
+          label="Fondo"
+          value={data.fillColor}
+          fallback="#ffffff"
+          onChange={(value) => set({ fillColor: normalizeColor(value) })}
+        />
+        <ColorField
+          label="Texto"
+          value={data.textColor}
+          fallback="#475569"
+          onChange={(value) => set({ textColor: normalizeColor(value) })}
+        />
+      </div>
+      {hasCustomColors && (
+        <button
+          type="button"
+          onClick={() => set({ strokeColor: '', fillColor: '', textColor: '' })}
+          className="text-[11px] font-medium text-slate-500 hover:text-slate-800"
+        >
+          Restaurar colores por convención
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RelationAppearanceSection({
+  strokeColor,
+  defaultColor,
+  onChange,
+}: {
+  strokeColor: string;
+  defaultColor: string;
+  onChange: (strokeColor: string) => void;
+}) {
+  const hasCustomColor = Boolean(strokeColor);
+
+  return (
+    <div className="space-y-3 rounded-xl border border-slate-200 px-3 py-3">
+      <div className="flex items-center gap-2">
+        <Palette className="h-4 w-4 text-slate-500" />
+        <p className="text-xs font-semibold text-slate-700">Color de la línea</p>
+      </div>
+
+      <ColorField
+        label="Trazo"
+        value={strokeColor}
+        fallback={defaultColor}
+        onChange={(value) => onChange(normalizeColor(value))}
+      />
+
+      {hasCustomColor && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          className="text-[11px] font-medium text-slate-500 hover:text-slate-800"
+        >
+          Restaurar color por convención
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  fallback: string;
+  onChange: (value: string) => void;
+}) {
+  const display = value || fallback;
+
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="color"
+          value={display}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-slate-200 bg-white p-0.5"
+          aria-label={label}
+        />
+        <Input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={fallback}
+          className="min-w-0 font-mono text-[11px]"
+        />
+      </div>
+    </Field>
   );
 }
 

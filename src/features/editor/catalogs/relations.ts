@@ -1,26 +1,28 @@
-import type { RelationDef, RelationId } from '@/features/editor/types';
+import type { RelationCategory, RelationDef, RelationId } from '@/features/editor/types';
 
-/**
- * Catálogo único de vínculos. Cada herramienta escoge el subconjunto que le
- * corresponde, pero el trazo de un vínculo conflictivo es el mismo en un
- * genograma que en un ecomapa, así que la definición vive en un solo lugar.
- */
+export const RELATION_CATEGORIES: { id: RelationCategory; label: string }[] = [
+  { id: 'estructura', label: 'Pareja y familia' },
+  { id: 'calidad', label: 'Calidad del vínculo' },
+];
+
 export const RELATIONS: Record<RelationId, RelationDef> = {
   union: {
     id: 'union',
-    label: 'Unión / pareja',
-    hint: 'Vínculo conyugal o de pareja vigente.',
+    label: 'Matrimonio',
+    hint: 'Cuadrado y círculo unidos por línea horizontal continua.',
     color: '#334155',
     stroke: 'solid',
     width: 2,
+    category: 'estructura',
   },
   cohabitation: {
     id: 'cohabitation',
-    label: 'Convivencia',
-    hint: 'Comparten hogar sin vínculo conyugal formal.',
+    label: 'Unión libre',
+    hint: 'Línea horizontal discontinua (convivencia sin matrimonio).',
     color: '#475569',
     stroke: 'dashed',
     width: 2,
+    category: 'estructura',
   },
   separation: {
     id: 'separation',
@@ -30,6 +32,7 @@ export const RELATIONS: Record<RelationId, RelationDef> = {
     stroke: 'solid',
     width: 2,
     slashes: 1,
+    category: 'estructura',
   },
   divorce: {
     id: 'divorce',
@@ -39,14 +42,16 @@ export const RELATIONS: Record<RelationId, RelationDef> = {
     stroke: 'solid',
     width: 2,
     slashes: 2,
+    category: 'estructura',
   },
   child: {
     id: 'child',
-    label: 'Hijos',
-    hint: 'Descendencia biológica. Se traza de la pareja hacia abajo.',
+    label: 'Hijo / hija',
+    hint: 'Descendencia. Línea vertical desde la pareja.',
     color: '#64748b',
     stroke: 'solid',
     width: 1.5,
+    category: 'estructura',
   },
   adoption: {
     id: 'adoption',
@@ -55,39 +60,64 @@ export const RELATIONS: Record<RelationId, RelationDef> = {
     color: '#64748b',
     stroke: 'dashed',
     width: 1.5,
+    category: 'estructura',
+  },
+  twins_identical: {
+    id: 'twins_identical',
+    label: 'Gemelos idénticos',
+    hint: 'Dos líneas desde la pareja unidas por barra horizontal (triángulo).',
+    color: '#64748b',
+    stroke: 'solid',
+    width: 1.5,
+    category: 'estructura',
+    twinBar: 'identical',
+  },
+  twins_fraternal: {
+    id: 'twins_fraternal',
+    label: 'Gemelos no idénticos',
+    hint: 'Dos líneas desde la pareja en forma de V abierta.',
+    color: '#64748b',
+    stroke: 'solid',
+    width: 1.5,
+    category: 'estructura',
+    twinBar: 'fraternal',
   },
   strong: {
     id: 'strong',
-    label: 'Relación fuerte',
-    hint: 'Vínculo cercano y sostenido, con apoyo efectivo.',
+    label: 'Relación estrecha',
+    hint: 'Línea doble (vínculo cercano y sostenido).',
     color: '#178578',
     stroke: 'double',
     width: 3,
+    category: 'calidad',
   },
   weak: {
     id: 'weak',
-    label: 'Relación débil',
-    hint: 'Contacto esporádico o de baja intensidad.',
+    label: 'Relación distante',
+    hint: 'Línea discontinua (contacto esporádico o distante).',
     color: '#94a3b8',
     stroke: 'dashed',
     width: 1.5,
+    category: 'calidad',
   },
   conflictive: {
     id: 'conflictive',
     label: 'Relación conflictiva',
-    hint: 'Tensión o desacuerdo recurrente entre las partes.',
+    hint: 'Tensión o desacuerdo recurrente.',
     color: '#dc2626',
     stroke: 'zigzag',
     width: 2,
+    category: 'calidad',
   },
   stressful: {
     id: 'stressful',
     label: 'Relación estresante',
-    hint: 'El vínculo demanda energía. La flecha indica hacia dónde va el desgaste.',
+    hint: 'Desgaste; la flecha indica la dirección.',
     color: '#ea580c',
     stroke: 'solid',
     width: 2,
     arrow: true,
+    category: 'calidad',
   },
   none: {
     id: 'none',
@@ -96,8 +126,11 @@ export const RELATIONS: Record<RelationId, RelationDef> = {
     color: '#cbd5e1',
     stroke: 'dotted',
     width: 1.5,
+    category: 'calidad',
   },
 };
+
+export const ALL_RELATIONS: RelationDef[] = Object.values(RELATIONS);
 
 export function pickRelations(...ids: RelationId[]): RelationDef[] {
   return ids.map((id) => RELATIONS[id]);
@@ -105,4 +138,8 @@ export function pickRelations(...ids: RelationId[]): RelationDef[] {
 
 export function getRelation(id: RelationId): RelationDef {
   return RELATIONS[id] ?? RELATIONS.union;
+}
+
+export function relationsByCategory(category: RelationCategory): RelationDef[] {
+  return ALL_RELATIONS.filter((relation) => relation.category === category);
 }

@@ -75,7 +75,7 @@ export function TutorialsPage() {
                 <div className="mt-4 grid gap-5 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                      {catalog.symbolsTitle}
+                      Símbolos
                     </p>
                     <ul className="mt-2 space-y-1.5">
                       {catalog.symbols.map((symbol) => (

@@ -1,4 +1,9 @@
 import type { EntityShape, RelationDef } from '@/features/editor/types';
+import { EntityShapeSvg } from '@/features/editor/shapes';
+import { cn } from '@/lib/utils';
+
+const PREVIEW_BOX = 'h-8 w-8';
+const PREVIEW_HOUSEHOLD = 'h-9 w-full max-w-[4.5rem]';
 
 export function SymbolPreview({
   shape,
@@ -10,30 +15,35 @@ export function SymbolPreview({
   className?: string;
 }) {
   const isResource = shape === 'resource';
-  const stroke = isResource ? '#d16a1f' : '#334155';
-  const fill = isResource ? '#fdeedd' : '#ffffff';
-  const common = { fill, stroke, strokeWidth: 4 };
+  const isHousehold = shape === 'household';
+  const stroke = isHousehold ? '#64748b' : isResource ? '#d16a1f' : '#334155';
+  const fill = isHousehold ? 'transparent' : isResource ? '#fdeedd' : '#ffffff';
 
   return (
-    <svg viewBox="0 0 96 96" className={className} aria-hidden>
-      {shape === 'male' && <rect x={12} y={12} width={72} height={72} rx={4} {...common} />}
-      {shape === 'female' && <circle cx={48} cy={48} r={36} {...common} />}
-      {shape === 'unknown' && <polygon points="48,10 86,48 48,86 10,48" {...common} />}
-      {shape === 'pregnancy' && <polygon points="48,14 84,82 12,82" {...common} />}
-      {isResource && <rect x={4} y={26} width={88} height={44} rx={22} {...common} />}
-      {deceased && (
-        <g stroke={stroke} strokeWidth={4} strokeLinecap="round">
-          <line x1={16} y1={16} x2={80} y2={80} />
-          <line x1={80} y1={16} x2={16} y2={80} />
-        </g>
+    <div
+      className={cn(
+        'flex shrink-0 items-center justify-center overflow-hidden',
+        isHousehold ? PREVIEW_HOUSEHOLD : PREVIEW_BOX,
+        className,
       )}
-    </svg>
+    >
+      <EntityShapeSvg
+        shape={shape}
+        deceased={deceased}
+        style={{
+          stroke,
+          fill,
+          strokeWidth: isHousehold ? 2.5 : 3,
+          dash: isHousehold ? '6 4' : undefined,
+        }}
+      />
+    </div>
   );
 }
 
 /** Muestra en miniatura el trazo exacto con el que se dibujará el vínculo. */
 export function RelationPreview({ relation }: { relation: RelationDef }) {
-  const { color, stroke, width, slashes, arrow } = relation;
+  const { color, stroke, width, slashes, arrow, twinBar } = relation;
   const markerId = `preview-arrow-${relation.id}`;
   const dash = stroke === 'dashed' ? '7 5' : stroke === 'dotted' ? '1 5' : undefined;
 
@@ -53,7 +63,18 @@ export function RelationPreview({ relation }: { relation: RelationDef }) {
         </defs>
       )}
 
-      {stroke === 'zigzag' ? (
+      {twinBar === 'identical' ? (
+        <>
+          <line x1={18} y1={18} x2={18} y2={8} stroke={color} strokeWidth={width} />
+          <line x1={42} y1={18} x2={42} y2={8} stroke={color} strokeWidth={width} />
+          <line x1={18} y1={8} x2={42} y2={8} stroke={color} strokeWidth={width} />
+        </>
+      ) : twinBar === 'fraternal' ? (
+        <>
+          <line x1={30} y1={6} x2={18} y2={18} stroke={color} strokeWidth={width} />
+          <line x1={30} y1={6} x2={42} y2={18} stroke={color} strokeWidth={width} />
+        </>
+      ) : stroke === 'zigzag' ? (
         <polyline points={zigzagPoints} fill="none" stroke={color} strokeWidth={width} />
       ) : stroke === 'double' ? (
         <>

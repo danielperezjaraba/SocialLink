@@ -31,6 +31,7 @@ export const PLANS: PlanDefinition[] = [
       'Plantillas básicas',
       'Genograma básico',
       'Ecomapa básico',
+      'Personalización de símbolos y colores',
       'Exportación limitada a imagen',
     ],
     limits: {
@@ -38,7 +39,7 @@ export const PLANS: PlanDefinition[] = [
       allTemplates: false,
       exportPdf: false,
       exportImage: true,
-      customization: false,
+      customization: true,
     },
   },
   {

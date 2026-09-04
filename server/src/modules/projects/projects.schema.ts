@@ -1,7 +1,23 @@
 import { z } from 'zod';
 
 const entityDataSchema = z.object({
-  shape: z.enum(['male', 'female', 'unknown', 'pregnancy', 'resource']),
+  shape: z.enum([
+    'male',
+    'female',
+    'unknown',
+    'pregnancy',
+    'resource',
+    'patient_male',
+    'patient_female',
+    'stillborn',
+    'induced_abortion',
+    'spontaneous_abortion',
+    'disorder_untreated',
+    'disorder_treated',
+    'substance_use',
+    'substance_recovery',
+    'household',
+  ]),
   name: z.string().max(160).default(''),
   age: z.string().max(20).default(''),
   sex: z.enum(['', 'M', 'F', 'X']).default(''),
@@ -12,6 +28,12 @@ const entityDataSchema = z.object({
   deceased: z.boolean().default(false),
   isIndex: z.boolean().default(false),
   notes: z.string().max(2000).default(''),
+  strokeColor: z.string().max(7).default(''),
+  fillColor: z.string().max(7).default(''),
+  textColor: z.string().max(7).default(''),
+  showAge: z.boolean().default(true),
+  showBirthDate: z.boolean().default(false),
+  showNameInside: z.boolean().default(false),
 });
 
 /**
@@ -41,6 +63,8 @@ const edgeSchema = z.object({
       'divorce',
       'child',
       'adoption',
+      'twins_identical',
+      'twins_fraternal',
       'strong',
       'weak',
       'conflictive',
@@ -48,6 +72,7 @@ const edgeSchema = z.object({
       'none',
     ]),
     note: z.string().max(2000).default(''),
+    strokeColor: z.string().max(7).default(''),
   }),
 });
 

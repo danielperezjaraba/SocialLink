@@ -90,13 +90,15 @@ export async function loadDiagram(projectId: string): Promise<Diagram> {
       `SELECT id, shape, name, age, sex,
               to_char(birth_date, 'YYYY-MM-DD') AS birth_date,
               occupation, kinship, cohabits, deceased, is_index, notes,
+              stroke_color, fill_color, text_color,
+              show_age, show_birth_date, show_name_inside,
               position_x, position_y
          FROM diagram_entities
         WHERE project_id = $1`,
       [projectId],
     ),
     pool.query<RelationRow>(
-      `SELECT id, source_id, target_id, source_handle, target_handle, relation, note
+      `SELECT id, source_id, target_id, source_handle, target_handle, relation, note, stroke_color
          FROM diagram_relations
         WHERE project_id = $1`,
       [projectId],
@@ -178,16 +180,25 @@ export async function replaceDiagram(
         entity.deceased,
         entity.isIndex,
         entity.notes,
+        entity.strokeColor,
+        entity.fillColor,
+        entity.textColor,
+        entity.showAge,
+        entity.showBirthDate,
+        entity.showNameInside,
         entity.positionX,
         entity.positionY,
       );
-      return `(${Array.from({ length: 15 }, (_, i) => `$${start + i + 1}`).join(', ')})`;
+      return `(${Array.from({ length: 21 }, (_, i) => `$${start + i + 1}`).join(', ')})`;
     });
 
     await client.query(
       `INSERT INTO diagram_entities
          (id, project_id, shape, name, age, sex, birth_date, occupation, kinship,
-          cohabits, deceased, is_index, notes, position_x, position_y)
+          cohabits, deceased, is_index, notes,
+          stroke_color, fill_color, text_color,
+          show_age, show_birth_date, show_name_inside,
+          position_x, position_y)
        VALUES ${tuples.join(', ')}`,
       values,
     );
@@ -206,13 +217,14 @@ export async function replaceDiagram(
         relation.targetHandle,
         relation.relation,
         relation.note,
+        relation.strokeColor,
       );
-      return `(${Array.from({ length: 8 }, (_, i) => `$${start + i + 1}`).join(', ')})`;
+      return `(${Array.from({ length: 9 }, (_, i) => `$${start + i + 1}`).join(', ')})`;
     });
 
     await client.query(
       `INSERT INTO diagram_relations
-         (id, project_id, source_id, target_id, source_handle, target_handle, relation, note)
+         (id, project_id, source_id, target_id, source_handle, target_handle, relation, note, stroke_color)
        VALUES ${tuples.join(', ')}`,
       values,
     );

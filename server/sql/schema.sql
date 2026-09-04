@@ -9,10 +9,17 @@
 CREATE TYPE user_profile  AS ENUM ('estudiante', 'docente', 'profesional');
 CREATE TYPE plan_id       AS ENUM ('free', 'premium', 'institucional');
 CREATE TYPE tool_kind     AS ENUM ('genograma', 'familiograma', 'ecomapa');
-CREATE TYPE entity_shape  AS ENUM ('male', 'female', 'unknown', 'pregnancy', 'resource');
+CREATE TYPE entity_shape  AS ENUM (
+  'male', 'female', 'unknown', 'pregnancy', 'resource',
+  'patient_male', 'patient_female', 'stillborn',
+  'induced_abortion', 'spontaneous_abortion',
+  'disorder_untreated', 'disorder_treated',
+  'substance_use', 'substance_recovery', 'household'
+);
 CREATE TYPE sex_type      AS ENUM ('M', 'F', 'X');
 CREATE TYPE relation_kind AS ENUM (
   'union', 'cohabitation', 'separation', 'divorce', 'child', 'adoption',
+  'twins_identical', 'twins_fraternal',
   'strong', 'weak', 'conflictive', 'stressful', 'none'
 );
 
@@ -31,7 +38,7 @@ CREATE TABLE plans (
 );
 
 INSERT INTO plans (id, name, price_cop, max_projects, all_templates, export_pdf, export_image, customization) VALUES
-  ('free',          'Plan gratuito',      0,     2,    false, false, true, false),
+  ('free',          'Plan gratuito',      0,     2,    false, false, true, true),
   ('premium',       'Plan Premium',       19900, NULL, true,  true,  true, true),
   ('institucional', 'Plan Institucional', NULL,  NULL, true,  true,  true, true);
 
@@ -74,7 +81,7 @@ CREATE TABLE diagram_entities (
   project_id uuid NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
   shape      entity_shape NOT NULL,
   name       text NOT NULL DEFAULT '',
-  age        smallint CHECK (age IS NULL OR age BETWEEN 0 AND 130),
+  age        smallint CHECK (age IS NULL OR age BETWEEN 0 AND 110),
   sex        sex_type,
   birth_date date,
   occupation text NOT NULL DEFAULT '',
@@ -83,6 +90,12 @@ CREATE TABLE diagram_entities (
   deceased   boolean NOT NULL DEFAULT false,
   is_index   boolean NOT NULL DEFAULT false,
   notes      text NOT NULL DEFAULT '',
+  stroke_color   text NOT NULL DEFAULT '',
+  fill_color     text NOT NULL DEFAULT '',
+  text_color     text NOT NULL DEFAULT '',
+  show_age       boolean NOT NULL DEFAULT true,
+  show_birth_date boolean NOT NULL DEFAULT false,
+  show_name_inside boolean NOT NULL DEFAULT false,
   position_x double precision NOT NULL DEFAULT 0,
   position_y double precision NOT NULL DEFAULT 0
 );
@@ -101,6 +114,7 @@ CREATE TABLE diagram_relations (
   target_handle text,
   relation      relation_kind NOT NULL,
   note          text NOT NULL DEFAULT '',
+  stroke_color  text NOT NULL DEFAULT '',
   CONSTRAINT sin_auto_vinculo CHECK (source_id <> target_id)
 );
 

@@ -1,5 +1,7 @@
 import { makeEntity } from '@/features/editor/catalogs';
+import { birthDateFromAge } from '@/features/editor/entityStyle';
 import type { Diagram, EntityNode, RelationEdge, Sex } from '@/features/editor/types';
+import { EMPTY_RELATION } from '@/features/editor/types';
 import { createId } from '@/lib/utils';
 
 export type FamilyGeneration = 1 | 2 | 3;
@@ -69,6 +71,7 @@ export function buildFamilyDiagram(members: FamilyMember[]): Diagram {
   for (const [generation, bucket] of byGeneration) {
     const rowWidth = (bucket.length - 1) * COLUMN_WIDTH;
     bucket.forEach((member, index) => {
+      const trimmedAge = member.age.trim();
       const node = makeEntity(
         {
           x: 420 - rowWidth / 2 + index * COLUMN_WIDTH,
@@ -79,7 +82,8 @@ export function buildFamilyDiagram(members: FamilyMember[]): Diagram {
           sex: member.sex,
           name: member.name.trim(),
           kinship: member.kinship.trim(),
-          age: member.age.trim(),
+          age: trimmedAge,
+          birthDate: birthDateFromAge(trimmedAge),
           cohabits: member.cohabits,
         },
       );
@@ -98,7 +102,7 @@ export function buildFamilyDiagram(members: FamilyMember[]): Diagram {
       const first = nodesByMember.get(parents[0].id);
       const second = nodesByMember.get(parents[1].id);
       if (first && second) {
-        edges.push(link(first.id, second.id, { relation: 'union', note: '' }));
+        edges.push(link(first.id, second.id, { ...EMPTY_RELATION, relation: 'union' }));
       }
     }
 
@@ -109,7 +113,7 @@ export function buildFamilyDiagram(members: FamilyMember[]): Diagram {
       for (const parent of parents.slice(0, 2)) {
         const parentNode = nodesByMember.get(parent.id);
         if (parentNode) {
-          edges.push(link(parentNode.id, childNode.id, { relation: 'child', note: '' }));
+          edges.push(link(parentNode.id, childNode.id, { ...EMPTY_RELATION, relation: 'child' }));
         }
       }
     }

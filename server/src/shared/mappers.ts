@@ -23,6 +23,12 @@ export type EntityRow = {
   deceased: boolean;
   is_index: boolean;
   notes: string;
+  stroke_color: string;
+  fill_color: string;
+  text_color: string;
+  show_age: boolean;
+  show_birth_date: boolean;
+  show_name_inside: boolean;
   position_x: number;
   position_y: number;
 };
@@ -35,7 +41,18 @@ export type RelationRow = {
   target_handle: string | null;
   relation: RelationId;
   note: string;
+  stroke_color: string;
 };
+
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+function parseColor(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return HEX_COLOR.test(trimmed) ? trimmed.toLowerCase() : '';
+}
+
+const MAX_AGE = 110;
 
 /**
  * La edad se captura como texto libre en el editor pero se almacena como número
@@ -47,15 +64,41 @@ export function parseAge(value: string): number | null {
   if (!digits) return null;
 
   const age = Number.parseInt(digits, 10);
-  return Number.isFinite(age) && age >= 0 && age <= 130 ? age : null;
+  return Number.isFinite(age) && age >= 0 && age <= MAX_AGE ? age : null;
 }
 
 function parseSex(value: Sex): Sex | null {
   return value === 'M' || value === 'F' || value === 'X' ? value : null;
 }
 
+function ageFromBirthDate(iso: string, today = new Date()): number | null {
+  const [year, month, day] = iso.split('-').map(Number);
+  if (!year || !month || !day) return null;
+
+  const birth = new Date(year, month - 1, day);
+  if (
+    birth.getFullYear() !== year ||
+    birth.getMonth() !== month - 1 ||
+    birth.getDate() !== day
+  ) {
+    return null;
+  }
+
+  const reference = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (birth > reference) return null;
+
+  let age = reference.getFullYear() - birth.getFullYear();
+  const monthDiff = reference.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && reference.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 && age <= MAX_AGE ? age : null;
+}
+
 function parseDate(value: string): string | null {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  return ageFromBirthDate(value) === null ? null : value;
 }
 
 /**
@@ -84,6 +127,12 @@ export function rowsToDiagram(entities: EntityRow[], relations: RelationRow[]): 
         deceased: row.deceased,
         isIndex: row.is_index,
         notes: row.notes,
+        strokeColor: row.stroke_color ?? '',
+        fillColor: row.fill_color ?? '',
+        textColor: row.text_color ?? '',
+        showAge: row.show_age ?? true,
+        showBirthDate: row.show_birth_date ?? false,
+        showNameInside: row.show_name_inside ?? false,
       },
     })),
     edges: relations.map<DiagramEdge>((row) => ({
@@ -93,7 +142,7 @@ export function rowsToDiagram(entities: EntityRow[], relations: RelationRow[]): 
       target: row.target_id,
       sourceHandle: row.source_handle,
       targetHandle: row.target_handle,
-      data: { relation: row.relation, note: row.note },
+      data: { relation: row.relation, note: row.note, strokeColor: row.stroke_color ?? '' },
     })),
   };
 }
@@ -112,6 +161,12 @@ export type PreparedDiagram = {
     deceased: boolean;
     isIndex: boolean;
     notes: string;
+    strokeColor: string;
+    fillColor: string;
+    textColor: string;
+    showAge: boolean;
+    showBirthDate: boolean;
+    showNameInside: boolean;
     positionX: number;
     positionY: number;
   }>;
@@ -123,6 +178,7 @@ export type PreparedDiagram = {
     targetHandle: string | null;
     relation: RelationId;
     note: string;
+    strokeColor: string;
   }>;
 };
 
@@ -150,6 +206,12 @@ export function prepareDiagram(diagram: Diagram): PreparedDiagram {
       deceased: node.data.deceased,
       isIndex: node.data.isIndex,
       notes: node.data.notes,
+      strokeColor: parseColor(node.data.strokeColor ?? ''),
+      fillColor: parseColor(node.data.fillColor ?? ''),
+      textColor: parseColor(node.data.textColor ?? ''),
+      showAge: node.data.showAge !== false,
+      showBirthDate: Boolean(node.data.showBirthDate),
+      showNameInside: Boolean(node.data.showNameInside),
       positionX: node.position.x,
       positionY: node.position.y,
     };
@@ -169,6 +231,7 @@ export function prepareDiagram(diagram: Diagram): PreparedDiagram {
         targetHandle: edge.targetHandle ?? null,
         relation: edge.data.relation,
         note: edge.data.note,
+        strokeColor: parseColor(edge.data.strokeColor ?? ''),
       },
     ];
   });

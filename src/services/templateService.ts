@@ -1,5 +1,6 @@
 import { makeEntity } from '@/features/editor/catalogs';
 import type { Diagram, EntityNode, RelationEdge, RelationId, ToolKind } from '@/features/editor/types';
+import { EMPTY_RELATION } from '@/features/editor/types';
 import { createId } from '@/lib/utils';
 
 export type Template = {
@@ -17,7 +18,7 @@ function link(source: EntityNode, target: EntityNode, relation: RelationId, note
     type: 'relation',
     source: source.id,
     target: target.id,
-    data: { relation, note },
+    data: { ...EMPTY_RELATION, relation, note },
   };
 }
 

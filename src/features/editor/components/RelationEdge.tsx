@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { EdgeLabelRenderer, getStraightPath, type EdgeProps } from '@xyflow/react';
 import { getRelation } from '@/features/editor/catalogs/relations';
+import { getRelationColor } from '@/features/editor/entityStyle';
 import type { RelationEdge as RelationEdgeType } from '@/features/editor/types';
 
 type Point = { x: number; y: number };
@@ -65,6 +66,21 @@ function slashes(a: Point, b: Point, count: 1 | 2): string[] {
   });
 }
 
+function twinConnector(a: Point, b: Point, kind: 'identical' | 'fraternal'): string[] {
+  const barY = Math.min(a.y, b.y) - 28;
+  const midX = (a.x + b.x) / 2;
+
+  if (kind === 'identical') {
+    return [
+      straight({ x: a.x, y: barY }, { x: b.x, y: barY }),
+      straight({ x: a.x, y: a.y }, { x: a.x, y: barY }),
+      straight({ x: b.x, y: b.y }, { x: b.x, y: barY }),
+    ];
+  }
+
+  return [straight({ x: midX, y: barY }, a), straight({ x: midX, y: barY }, b)];
+}
+
 function RelationEdgeComponent({
   id,
   sourceX,
@@ -75,6 +91,7 @@ function RelationEdgeComponent({
   selected,
 }: EdgeProps<RelationEdgeType>) {
   const relation = getRelation(data?.relation ?? 'union');
+  const color = getRelationColor(data?.strokeColor, relation.color);
   const source = { x: sourceX, y: sourceY };
   const target = { x: targetX, y: targetY };
   const [, labelX, labelY] = getStraightPath({ sourceX, sourceY, targetX, targetY });
@@ -105,7 +122,7 @@ function RelationEdgeComponent({
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill={relation.color} />
+            <path d="M 0 0 L 10 5 L 0 10 z" fill={color} />
           </marker>
         </defs>
       )}
@@ -115,7 +132,7 @@ function RelationEdgeComponent({
           key={index}
           d={d}
           fill="none"
-          stroke={relation.color}
+          stroke={color}
           strokeWidth={width}
           strokeDasharray={dash}
           strokeLinecap={relation.stroke === 'dotted' ? 'round' : 'butt'}
@@ -123,13 +140,25 @@ function RelationEdgeComponent({
         />
       ))}
 
+      {relation.twinBar &&
+        twinConnector(source, target, relation.twinBar).map((d, index) => (
+          <path
+            key={`twin-${index}`}
+            d={d}
+            fill="none"
+            stroke={color}
+            strokeWidth={width}
+            strokeLinecap="round"
+          />
+        ))}
+
       {relation.slashes &&
         slashes(source, target, relation.slashes).map((d, index) => (
           <path
             key={`slash-${index}`}
             d={d}
             fill="none"
-            stroke={relation.color}
+            stroke={color}
             strokeWidth={width}
             strokeLinecap="round"
           />
@@ -139,7 +168,7 @@ function RelationEdgeComponent({
         <path
           d={paths[0]}
           fill="none"
-          stroke={relation.color}
+          stroke={color}
           strokeWidth={width + 10}
           strokeOpacity={0.15}
           strokeLinecap="round"

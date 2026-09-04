@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Info } from 'lucide-react';
+import { RELATION_CATEGORIES, relationsByCategory } from '@/features/editor/catalogs/relations';
+import { SYMBOL_CATEGORIES, symbolsByCategory } from '@/features/editor/catalogs/symbols';
 import { RelationPreview, SymbolPreview } from '@/features/editor/components/Previews';
-import type { RelationId, SymbolDef, ToolCatalog } from '@/features/editor/types';
+import type { RelationCategory, RelationId, SymbolCategory, SymbolDef, ToolCatalog } from '@/features/editor/types';
 import { cn } from '@/lib/utils';
 
 export const SYMBOL_DRAG_TYPE = 'application/sociallink-symbol';
@@ -12,7 +15,43 @@ type PaletteProps = {
   onAddSymbol: (symbol: SymbolDef) => void;
 };
 
+function TabBar<T extends string>({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: { id: T; label: string }[];
+  active: T;
+  onChange: (id: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => onChange(tab.id)}
+          className={cn(
+            'rounded-lg px-2 py-1 text-[10px] font-semibold transition-colors',
+            active === tab.id
+              ? 'bg-brand-100 text-brand-800'
+              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700',
+          )}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Palette({ catalog, activeRelation, onRelationChange, onAddSymbol }: PaletteProps) {
+  const [symbolTab, setSymbolTab] = useState<SymbolCategory>('integrantes');
+  const [relationTab, setRelationTab] = useState<RelationCategory>('estructura');
+
+  const visibleSymbols = symbolsByCategory(symbolTab);
+  const visibleRelations = relationsByCategory(relationTab);
+
   return (
     <aside className="flex w-64 shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-4 py-3">
@@ -20,16 +59,17 @@ export function Palette({ catalog, activeRelation, onRelationChange, onAddSymbol
           Elementos
         </h2>
         <p className="mt-1 text-xs text-slate-500">
-          Arrástralos al área de trabajo o haz clic para agregarlos.
+          Todos los símbolos están disponibles en {catalog.name.toLowerCase()}. Arrastra o haz clic.
         </p>
       </div>
 
       <div className="px-4 py-4">
         <h3 className="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-          {catalog.symbolsTitle}
+          Símbolos
         </h3>
-        <div className="grid grid-cols-2 gap-2">
-          {catalog.symbols.map((symbol) => (
+        <TabBar tabs={SYMBOL_CATEGORIES} active={symbolTab} onChange={setSymbolTab} />
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {visibleSymbols.map((symbol) => (
             <button
               key={symbol.id}
               type="button"
@@ -40,13 +80,9 @@ export function Palette({ catalog, activeRelation, onRelationChange, onAddSymbol
                 event.dataTransfer.effectAllowed = 'move';
               }}
               onClick={() => onAddSymbol(symbol)}
-              className="flex cursor-grab flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-3 text-center transition-colors hover:border-brand-400 hover:bg-brand-50 active:cursor-grabbing"
+              className="flex cursor-grab flex-col items-center gap-1.5 overflow-hidden rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-center transition-colors hover:border-brand-400 hover:bg-brand-50 active:cursor-grabbing"
             >
-              <SymbolPreview
-                shape={symbol.shape}
-                deceased={symbol.defaults?.deceased}
-                className="h-8 w-8"
-              />
+              <SymbolPreview shape={symbol.shape} deceased={symbol.defaults?.deceased} />
               <span className="text-[11px] leading-tight font-medium text-slate-700">
                 {symbol.label}
               </span>
@@ -57,14 +93,15 @@ export function Palette({ catalog, activeRelation, onRelationChange, onAddSymbol
 
       <div className="border-t border-slate-200 px-4 py-4">
         <h3 className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-          Tipo de vínculo
+          Vínculos
         </h3>
-        <p className="mb-3 text-[11px] text-slate-500">
-          Elige uno y luego une dos elementos arrastrando desde el borde de una figura.
+        <p className="mb-2 text-[11px] text-slate-500">
+          Elige uno y une dos elementos desde el borde de una figura.
         </p>
+        <TabBar tabs={RELATION_CATEGORIES} active={relationTab} onChange={setRelationTab} />
 
-        <div className="space-y-1">
-          {catalog.relations.map((relation) => {
+        <div className="mt-2 space-y-1">
+          {visibleRelations.map((relation) => {
             const isActive = relation.id === activeRelation;
             return (
               <button
@@ -98,8 +135,8 @@ export function Palette({ catalog, activeRelation, onRelationChange, onAddSymbol
         <p className="flex gap-2 text-[11px] leading-relaxed text-slate-500">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            Selecciona una figura o una línea para editar sus datos en el panel derecho. Con la tecla
-            Suprimir eliminas lo seleccionado.
+            Coloca el óvalo de hogar detrás de las figuras. Para gemelos, une a los dos hermanos con
+            el vínculo correspondiente.
           </span>
         </p>
       </div>
