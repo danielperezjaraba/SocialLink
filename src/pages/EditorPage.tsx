@@ -8,7 +8,7 @@ import { getCatalog } from '@/features/editor/catalogs';
 import { DiagramEditor } from '@/features/editor/components/DiagramEditor';
 import { ExportModal } from '@/features/editor/components/ExportModal';
 import { MembersModal } from '@/features/editor/components/MembersModal';
-import type { Diagram } from '@/features/editor/types';
+import type { Diagram, EntityNode } from '@/features/editor/types';
 import { getProject, updateProject } from '@/services/projectService';
 import type { Project } from '@/services/types';
 
@@ -220,7 +220,9 @@ export function EditorPage() {
       <ExportModal
         open={exportOpen}
         onClose={() => setExportOpen(false)}
-        nodes={() => liveDiagram.current.nodes}
+        nodes={() =>
+          liveDiagram.current.nodes.filter((node): node is EntityNode => node.type === 'entity')
+        }
         canExportPdf={plan.limits.exportPdf}
         meta={{
           projectName: name || project.name,

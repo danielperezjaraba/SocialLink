@@ -14,7 +14,8 @@ CREATE TYPE entity_shape  AS ENUM (
   'patient_male', 'patient_female', 'stillborn',
   'induced_abortion', 'spontaneous_abortion',
   'disorder_untreated', 'disorder_treated',
-  'substance_use', 'substance_recovery', 'household'
+  'substance_use', 'substance_recovery', 'household',
+  'anchor', 'junction'
 );
 CREATE TYPE sex_type      AS ENUM ('M', 'F', 'X');
 CREATE TYPE relation_kind AS ENUM (
@@ -115,6 +116,7 @@ CREATE TABLE diagram_relations (
   relation      relation_kind NOT NULL,
   note          text NOT NULL DEFAULT '',
   stroke_color  text NOT NULL DEFAULT '',
+  line_scale    real NOT NULL DEFAULT 1 CHECK (line_scale >= 0.5 AND line_scale <= 3),
   CONSTRAINT sin_auto_vinculo CHECK (source_id <> target_id)
 );
 

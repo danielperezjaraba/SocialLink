@@ -42,6 +42,7 @@ export type RelationRow = {
   relation: RelationId;
   note: string;
   stroke_color: string;
+  line_scale: number;
 };
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -50,6 +51,11 @@ function parseColor(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return '';
   return HEX_COLOR.test(trimmed) ? trimmed.toLowerCase() : '';
+}
+
+function parseScale(value: number | undefined, min: number, max: number, fallback = 1): number {
+  if (value === undefined || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(value * 10) / 10));
 }
 
 const MAX_AGE = 110;
@@ -111,30 +117,42 @@ function normalizeId(candidate: string): string {
 
 export function rowsToDiagram(entities: EntityRow[], relations: RelationRow[]): Diagram {
   return {
-    nodes: entities.map<DiagramNode>((row) => ({
-      id: row.id,
-      type: 'entity',
-      position: { x: row.position_x, y: row.position_y },
-      data: {
-        shape: row.shape,
-        name: row.name,
-        age: row.age === null ? '' : String(row.age),
-        sex: row.sex ?? '',
-        birthDate: row.birth_date ?? '',
-        occupation: row.occupation,
-        kinship: row.kinship,
-        cohabits: row.cohabits,
-        deceased: row.deceased,
-        isIndex: row.is_index,
-        notes: row.notes,
-        strokeColor: row.stroke_color ?? '',
-        fillColor: row.fill_color ?? '',
-        textColor: row.text_color ?? '',
-        showAge: row.show_age ?? true,
-        showBirthDate: row.show_birth_date ?? false,
-        showNameInside: row.show_name_inside ?? false,
-      },
-    })),
+    nodes: entities.map<DiagramNode>((row) => {
+      if (row.shape === 'anchor' || row.shape === 'junction') {
+        return {
+          id: row.id,
+          type: 'anchor',
+          position: { x: row.position_x, y: row.position_y },
+          nodeOrigin: [0.5, 0.5],
+          data: {} as Record<string, never>,
+        };
+      }
+
+      return {
+        id: row.id,
+        type: 'entity',
+        position: { x: row.position_x, y: row.position_y },
+        data: {
+          shape: row.shape,
+          name: row.name,
+          age: row.age === null ? '' : String(row.age),
+          sex: row.sex ?? '',
+          birthDate: row.birth_date ?? '',
+          occupation: row.occupation,
+          kinship: row.kinship,
+          cohabits: row.cohabits,
+          deceased: row.deceased,
+          isIndex: row.is_index,
+          notes: row.notes,
+          strokeColor: row.stroke_color ?? '',
+          fillColor: row.fill_color ?? '',
+          textColor: row.text_color ?? '',
+          showAge: row.show_age ?? true,
+          showBirthDate: row.show_birth_date ?? false,
+          showNameInside: row.show_name_inside ?? false,
+        },
+      };
+    }),
     edges: relations.map<DiagramEdge>((row) => ({
       id: row.id,
       type: 'relation',
@@ -142,7 +160,12 @@ export function rowsToDiagram(entities: EntityRow[], relations: RelationRow[]): 
       target: row.target_id,
       sourceHandle: row.source_handle,
       targetHandle: row.target_handle,
-      data: { relation: row.relation, note: row.note, strokeColor: row.stroke_color ?? '' },
+      data: {
+        relation: row.relation,
+        note: row.note,
+        strokeColor: row.stroke_color ?? '',
+        lineScale: parseScale(row.line_scale, 0.5, 3),
+      },
     })),
   };
 }
@@ -179,6 +202,7 @@ export type PreparedDiagram = {
     relation: RelationId;
     note: string;
     strokeColor: string;
+    lineScale: number;
   }>;
 };
 
@@ -192,6 +216,31 @@ export function prepareDiagram(diagram: Diagram): PreparedDiagram {
   const entities = diagram.nodes.map((node) => {
     const id = normalizeId(node.id);
     idMap.set(node.id, id);
+
+    if (node.type === 'anchor') {
+      return {
+        id,
+        shape: 'anchor' as EntityShape,
+        name: '',
+        age: null,
+        sex: null,
+        birthDate: null,
+        occupation: '',
+        kinship: '',
+        cohabits: false,
+        deceased: false,
+        isIndex: false,
+        notes: '',
+        strokeColor: '',
+        fillColor: '',
+        textColor: '',
+        showAge: false,
+        showBirthDate: false,
+        showNameInside: false,
+        positionX: node.position.x,
+        positionY: node.position.y,
+      };
+    }
 
     return {
       id,
@@ -232,6 +281,7 @@ export function prepareDiagram(diagram: Diagram): PreparedDiagram {
         relation: edge.data.relation,
         note: edge.data.note,
         strokeColor: parseColor(edge.data.strokeColor ?? ''),
+        lineScale: parseScale(edge.data.lineScale, 0.5, 3),
       },
     ];
   });

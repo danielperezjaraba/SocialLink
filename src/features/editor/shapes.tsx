@@ -31,19 +31,22 @@ export function EntityShapeSvg({
   style,
   deceased = false,
   size = SHAPE_SIZE,
+  width,
+  height,
   className,
 }: {
   shape: EntityShape;
   style: ShapeStyle;
   deceased?: boolean;
-  /** Unidad lógica del viewBox (no píxeles en pantalla). */
   size?: number;
+  width?: number;
+  height?: number;
   className?: string;
 }) {
   const { stroke, fill, strokeWidth, dash } = style;
   const common = { fill, stroke, strokeWidth, strokeDasharray: dash };
-  const w = shape === 'household' ? HOUSEHOLD_WIDTH : size;
-  const h = shape === 'household' ? HOUSEHOLD_HEIGHT : size;
+  const w = shape === 'household' ? (width ?? HOUSEHOLD_WIDTH) : (width ?? size);
+  const h = shape === 'household' ? (height ?? HOUSEHOLD_HEIGHT) : (height ?? width ?? size);
   const cx = w / 2;
   const cy = h / 2;
 

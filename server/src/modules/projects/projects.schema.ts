@@ -17,6 +17,8 @@ const entityDataSchema = z.object({
     'substance_use',
     'substance_recovery',
     'household',
+    'anchor',
+    'junction',
   ]),
   name: z.string().max(160).default(''),
   age: z.string().max(20).default(''),
@@ -41,12 +43,21 @@ const entityDataSchema = z.object({
  * Al no declararlos, el validador los descarta y a la base solo llega el
  * contenido del caso.
  */
-const nodeSchema = z.object({
+const entityNodeSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.literal('entity').default('entity'),
   position: z.object({ x: z.number().finite(), y: z.number().finite() }),
   data: entityDataSchema,
 });
+
+const anchorNodeSchema = z.object({
+  id: z.string().min(1).max(64),
+  type: z.literal('anchor'),
+  position: z.object({ x: z.number().finite(), y: z.number().finite() }),
+  data: z.object({}).default({}),
+});
+
+const nodeSchema = z.discriminatedUnion('type', [entityNodeSchema, anchorNodeSchema]);
 
 const edgeSchema = z.object({
   id: z.string().min(1).max(64),
@@ -73,6 +84,7 @@ const edgeSchema = z.object({
     ]),
     note: z.string().max(2000).default(''),
     strokeColor: z.string().max(7).default(''),
+    lineScale: z.number().min(0.5).max(3).default(1),
   }),
 });
 

@@ -96,7 +96,7 @@ export function Palette({ catalog, activeRelation, onRelationChange, onAddSymbol
           Vínculos
         </h3>
         <p className="mb-2 text-[11px] text-slate-500">
-          Elige uno y une dos elementos desde el borde de una figura.
+          Elige uno y arrastra desde cualquier punto del contorno de una figura.
         </p>
         <TabBar tabs={RELATION_CATEGORIES} active={relationTab} onChange={setRelationTab} />
 
@@ -135,8 +135,8 @@ export function Palette({ catalog, activeRelation, onRelationChange, onAddSymbol
         <p className="flex gap-2 text-[11px] leading-relaxed text-slate-500">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            Coloca el óvalo de hogar detrás de las figuras. Para gemelos, une a los dos hermanos con
-            el vínculo correspondiente.
+            Las líneas se trazan en ángulo recto (horizontal y vertical). Arrastra desde una línea
+            para ramificar; al seleccionar una línea puedes cambiar su grosor.
           </span>
         </p>
       </div>

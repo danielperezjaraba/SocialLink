@@ -98,7 +98,7 @@ export async function loadDiagram(projectId: string): Promise<Diagram> {
       [projectId],
     ),
     pool.query<RelationRow>(
-      `SELECT id, source_id, target_id, source_handle, target_handle, relation, note, stroke_color
+      `SELECT id, source_id, target_id, source_handle, target_handle, relation, note, stroke_color, line_scale
          FROM diagram_relations
         WHERE project_id = $1`,
       [projectId],
@@ -218,13 +218,14 @@ export async function replaceDiagram(
         relation.relation,
         relation.note,
         relation.strokeColor,
+        relation.lineScale,
       );
-      return `(${Array.from({ length: 9 }, (_, i) => `$${start + i + 1}`).join(', ')})`;
+      return `(${Array.from({ length: 10 }, (_, i) => `$${start + i + 1}`).join(', ')})`;
     });
 
     await client.query(
       `INSERT INTO diagram_relations
-         (id, project_id, source_id, target_id, source_handle, target_handle, relation, note, stroke_color)
+         (id, project_id, source_id, target_id, source_handle, target_handle, relation, note, stroke_color, line_scale)
        VALUES ${tuples.join(', ')}`,
       values,
     );

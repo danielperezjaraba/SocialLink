@@ -1,6 +1,7 @@
 import { MousePointerSquareDashed, Palette, Save, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
+import { MAX_LINE_SCALE, MIN_LINE_SCALE } from '@/features/editor/entityDimensions';
 import {
   isValidBirthDate,
   MAX_AGE,
@@ -352,8 +353,10 @@ function RelationForm({
 
         <RelationAppearanceSection
           strokeColor={edge.data?.strokeColor ?? ''}
+          lineScale={edge.data?.lineScale ?? 1}
           defaultColor={definition.color}
           onChange={(strokeColor) => onChange(edge.id, { strokeColor })}
+          onLineScaleChange={(lineScale) => onChange(edge.id, { lineScale })}
         />
       </div>
 
@@ -460,6 +463,7 @@ function AppearanceSection({
           onChange={(value) => set({ textColor: normalizeColor(value) })}
         />
       </div>
+
       {hasCustomColors && (
         <button
           type="button"
@@ -475,12 +479,16 @@ function AppearanceSection({
 
 function RelationAppearanceSection({
   strokeColor,
+  lineScale,
   defaultColor,
   onChange,
+  onLineScaleChange,
 }: {
   strokeColor: string;
+  lineScale: number;
   defaultColor: string;
   onChange: (strokeColor: string) => void;
+  onLineScaleChange: (lineScale: number) => void;
 }) {
   const hasCustomColor = Boolean(strokeColor);
 
@@ -488,7 +496,7 @@ function RelationAppearanceSection({
     <div className="space-y-3 rounded-xl border border-slate-200 px-3 py-3">
       <div className="flex items-center gap-2">
         <Palette className="h-4 w-4 text-slate-500" />
-        <p className="text-xs font-semibold text-slate-700">Color de la línea</p>
+        <p className="text-xs font-semibold text-slate-700">Apariencia de la línea</p>
       </div>
 
       <ColorField
@@ -496,6 +504,14 @@ function RelationAppearanceSection({
         value={strokeColor}
         fallback={defaultColor}
         onChange={(value) => onChange(normalizeColor(value))}
+      />
+
+      <ScaleField
+        label="Grosor"
+        value={lineScale}
+        min={MIN_LINE_SCALE}
+        max={MAX_LINE_SCALE}
+        onChange={onLineScaleChange}
       />
 
       {hasCustomColor && (
@@ -508,6 +524,46 @@ function RelationAppearanceSection({
         </button>
       )}
     </div>
+  );
+}
+
+function ScaleField({
+  label,
+  hint,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  const display = value || 1;
+
+  return (
+    <Field label={label} hint={hint}>
+      <div className="flex items-center gap-2">
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={0.1}
+          value={display}
+          onChange={(event) =>
+            onChange(Math.round(Number.parseFloat(event.target.value) * 10) / 10)
+          }
+          className="h-2 flex-1 cursor-pointer accent-brand-600"
+          aria-label={label}
+        />
+        <span className="w-10 shrink-0 text-right text-xs font-medium text-slate-600">
+          {display.toFixed(1)}×
+        </span>
+      </div>
+    </Field>
   );
 }
 

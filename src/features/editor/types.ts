@@ -68,7 +68,12 @@ export type RelationId =
   | 'stressful'
   | 'none';
 
-export type SymbolCategory = 'integrantes' | 'eventos' | 'salud' | 'entorno' | 'hogar';
+export type SymbolCategory =
+  | 'integrantes'
+  | 'eventos'
+  | 'salud'
+  | 'entorno'
+  | 'hogar';
 
 export type RelationCategory = 'estructura' | 'calidad';
 
@@ -77,19 +82,27 @@ export type RelationData = {
   note: string;
   /** Color personalizado de la línea (hex). Vacío = convención del tipo de vínculo. */
   strokeColor: string;
+  /** Grosor relativo de la línea (1 = convención del tipo de vínculo). */
+  lineScale: number;
 };
 
 export const EMPTY_RELATION: RelationData = {
   relation: 'union',
   note: '',
   strokeColor: '',
+  lineScale: 1,
 };
 
 export type EntityNode = Node<EntityData, 'entity'>;
+export type AnchorNode = Node<Record<string, never>, 'anchor'> & {
+  nodeOrigin?: [number, number];
+};
+export type DiagramNode = EntityNode | AnchorNode;
+
 export type RelationEdge = Edge<RelationData, 'relation'>;
 
 export type Diagram = {
-  nodes: EntityNode[];
+  nodes: DiagramNode[];
   edges: RelationEdge[];
 };
 

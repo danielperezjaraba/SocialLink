@@ -17,7 +17,9 @@ export type EntityShape =
   | 'disorder_treated'
   | 'substance_use'
   | 'substance_recovery'
-  | 'household';
+  | 'household'
+  | 'anchor'
+  | 'junction';
 export type Sex = '' | 'M' | 'F' | 'X';
 
 export type RelationId =
@@ -60,12 +62,19 @@ export type EntityData = {
   showNameInside: boolean;
 };
 
-export type DiagramNode = {
-  id: string;
-  type: 'entity';
-  position: { x: number; y: number };
-  data: EntityData;
-};
+export type DiagramNode =
+  | {
+      id: string;
+      type: 'entity';
+      position: { x: number; y: number };
+      data: EntityData;
+    }
+  | {
+      id: string;
+      type: 'anchor';
+      position: { x: number; y: number };
+      data: Record<string, never>;
+    };
 
 export type DiagramEdge = {
   id: string;
@@ -74,7 +83,7 @@ export type DiagramEdge = {
   target: string;
   sourceHandle?: string | null;
   targetHandle?: string | null;
-  data: { relation: RelationId; note: string; strokeColor: string };
+  data: { relation: RelationId; note: string; strokeColor: string; lineScale: number };
 };
 
 export type Diagram = {
